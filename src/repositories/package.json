@@ -1,0 +1,17 @@
+{
+  "name": "brutalsimplicity-cloud-repositories",
+  "version": "1.0.0",
+  "description": "Repositories for cloud APIs (Google, Dropbox, SendGrid, etc...)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kory Taborn",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/datastore": "^1.0.0",
+    "@types/lodash": "^4.14.62",
+    "@types/node": "^7.0.12",
+    "lodash": "^4.17.4"
+  }
+}
