@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2015",
+        "noImplicitAny": false,
+        "sourceMap": true,
+        "outDir": "js",
+        "baseUrl": ".",
+        "paths": {
+            "*": [
+                "Datastore/*"
+            ]
+        },
+        "typeRoots": [
+            "./Datastore"
+        ]
+    }
+}
