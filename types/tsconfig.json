@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2015",
+        "noImplicitAny": false,
+        "sourceMap": true,
+        "outDir": "lib",
+        "baseUrl": ".",
+        "paths": {
+            "*": [ "./src/*", "playground.ts"]
+        },
+        "typeRoots": [
+            "./src",
+            "./node_modules/@types"
+        ],
+        "declaration": true
+    },
+
+    "include": [
+        "src/*",
+        "tests/*",
+        "playground.ts"
+    ]
+}
