@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceRoot}\\playground.ts",
+            "program": "${workspaceRoot}\\tests\\utils.ts",
             "outFiles": [ "${workspaceRoot}\\lib\\**\\*.js"]
         },
         {
@@ -18,6 +18,16 @@
             "address": "localhost",
             "port": 5858,
             "outFiles": []
-        }
+        },
+		{
+			"name": "Run mocha",
+			"type": "node",
+            "request": "launch",
+			"program": "${workspaceRoot}\\node_modules\\mocha\\bin\\_mocha",
+			"args": ["${workspaceRoot}\\lib\\tests\\tests.js"],
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "tsc",
+            "sourceMaps": true
+		}
     ]
 }

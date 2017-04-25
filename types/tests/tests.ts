@@ -1,6 +1,9 @@
 import * as Datastore from '@google-cloud/datastore';
+import * as dateformat from 'dateformat';
+import * as chalk from 'chalk';
 import { accessSync, readFileSync } from 'fs';
 import { expect } from 'chai';
+import { sleepSync } from './utils';
 
 interface MockData {
     id: number,
@@ -13,25 +16,35 @@ interface MockData {
 
 let config = null;
 let ds: Datastore = null;
-before(() => {
+before(function () {
+    this.timeout(10000);
     let configPath = '.config/config.json';
     // get config
-    accessSync(configPath);
+    console.log(chalk.green('reading configuration...'));
     config = JSON.parse(readFileSync(configPath, 'utf8'));
+
+    // create a new datastore instance and display the current
+    // base url
+    ds = new Datastore({
+        projectId: config['project_id'],
+        apiEndpoint: config['datastore_host']
+    });
+    console.log(chalk.yellow('Datastore base url: ' + ds.baseUrl_));
 });
 
-beforeEach(function() {
+beforeEach(function () {
     ds = new Datastore({
-        projectId: config['project_id']
+        projectId: config['project_id'],
+        apiEndpoint: config['datastore_host']
     });
-})
+});
 
-describe('Datastore', function() {
-    describe('#constructor', function() {
-        it('should assign a project id', function() {
+describe('Datastore', function () {
+    describe('#constructor', function () {
+        it('should assign a project id', function () {
             expect(ds.projectId).to.equal(config['project_id']);
         });
-        it('should assign a namespace', function() {
+        it('should assign a namespace', function () {
             let dsConfig: Datastore.DatastoreConfiguration = {
                 projectId: config['project_id'],
                 namespace: 'test'
@@ -41,10 +54,10 @@ describe('Datastore', function() {
             expect(ds.namespace).to.equal('test');
         });
     });
-    
-    describe('#key', function() {
+
+    describe('#key', function () {
         let key = null;
-        beforeEach(function() {
+        beforeEach(function () {
             let options: Datastore.KeyOptions = {
                 path: ['test', 1234]
             }
@@ -55,36 +68,36 @@ describe('Datastore', function() {
             // filled in.
             key = ds.key(options) as any;
         })
-        it('should return Key', function() {
+        it('should return Key', function () {
             expect(key.kind).to.not.be.empty;
             expect(key.kind).to.equal('test');
             expect(key.id).to.equal(1234);
         });
 
-        it('should return partial key', function() {
+        it('should return partial key', function () {
             expect(key.kind).to.equal('test');
         });
     });
 
-    describe('#int', function() {
-        it('should return Int', function() {
+    describe('#int', function () {
+        it('should return Int', function () {
             let i = ds.int(1234);
             expect(i.value).to.equal('1234');
-            
+
             i = ds.int('1234');
             expect(i.value).to.equal('1234');
         })
     });
 
-    describe('#double', function() {
-        it('should return Double', function() {
+    describe('#double', function () {
+        it('should return Double', function () {
             let i = ds.double(1234.1234);
             expect(i.value).to.equal(1234.1234);
         })
     });
 
-    describe('#geoPoint', function() {
-        it('should return GeoPoint', function() {
+    describe('#geoPoint', function () {
+        it('should return GeoPoint', function () {
             let coor = ds.geoPoint({
                 latitude: 40.6894,
                 longitude: -74.0447
@@ -93,7 +106,7 @@ describe('Datastore', function() {
         });
     });
 
-    describe('crud single entity',function() {
+    describe('crud single entity', function () {
         let key = null;
         let mockData: MockData = {
             email: 'pwarren0@sun.com',
@@ -103,17 +116,19 @@ describe('Datastore', function() {
             gender: 'Male',
             ip_address: '132.3.989.209'
         }
-        beforeEach(function() {
+        beforeEach(function () {
             let opts: Datastore.KeyOptions = {
                 path: ['types/test', '000001']
             };
             key = ds.key(opts);
         });
-        afterEach(function() {
+        afterEach(function () {
             ds.delete(key);
         });
 
-        it('should save successfully', function() {
+        it('should save successfully', function () {
+            // increase the max 2-second wait period of mocha
+            this.timeout(5000);
             let entity: Datastore.ObjectEntity<MockData> = {
                 data: mockData,
                 key: key
@@ -121,10 +136,11 @@ describe('Datastore', function() {
 
             // as long as the save is not rejected, we'll assume
             // it succeeds. Get will test end-to-end.
-            return ds.save<MockData>(entity);
+            return ds.save(entity);
         });
 
-        it('should save successfully with field definitions', function() {
+        it('should save successfully with field definitions', function () {
+            this.timeout(5000);
             let entity: Datastore.FieldDefinitionEntity = {
                 key: key,
                 data: [
@@ -158,7 +174,7 @@ describe('Datastore', function() {
             return ds.save(entity);
         });
 
-        it('should get mock data', function() {
+        it('should get mock data', function () {
             let entity: Datastore.ObjectEntity<MockData> = {
                 key: key,
                 data: mockData
@@ -166,54 +182,103 @@ describe('Datastore', function() {
 
             return ds.save(entity)
                 .then(_ => {
-                    ds.get(key)
+                    return ds.get(key)
                         .then(data => expect(data[0]).to.deep.equal(mockData));
                 })
         });
+
+        it('should delete an entity', function () {
+            let entity: Datastore.ObjectEntity<MockData> = {
+                data: mockData,
+                key: key
+            };
+            return ds.save<MockData>(entity)
+                .then(() => {
+                    return ds.delete(key)
+                        .then(() => {
+                            return ds.get<MockData>(key).then(data => expect(data[0]).to.be.undefined);
+                        });
+                });
+        });
     });
 
-    describe('crud multiple entities', function() {
-        let key = null;
+    describe('crud multiple entities', function () {
+        /* in this test we will work with a batch of entities created at the start
+         * and only deleted after the last test.
+         */
+
+        let partialKey = null;
         let testData: MockData[] = null;
-        beforeEach(function() {
-            accessSync('test_data/mock-data.json');
-            testData  = JSON.parse(readFileSync('test_data/mock-data.json', 'utf8'));
+        before(function () {
+            // increase the max 2-second wait period of mocha
+            this.timeout(10000);
+            let entities: Datastore.ObjectEntity<MockData>[] = [];
+            testData = JSON.parse(readFileSync('test_data/mock-data.json', 'utf8'));
             let opts: Datastore.KeyOptions = {
                 path: ['types/test']
             };
-            key = ds.key(opts);
-        });
-
-        afterEach(function() {
-            ds.delete(key);
-        });
-
-        it('should save batched entities', function() {
-            this.timeout(10000);
-            let entities: Datastore.ObjectEntity<MockData>[] = [];
-            for (var entry of testData.slice(0, 250)) {
+            partialKey = ds.key(opts);
+            for (var entry of testData) {
                 entities.push({
-                    key: key,
+                    key: partialKey,
                     data: entry
                 });
             }
-            return ds.save(entities);
+
+            return ds.transaction().run()
+                .then(data => {
+                    let transaction = data[0];
+                    while (entities.length > 0) {
+
+                        // can only save a max of 500 entities at a time
+                        let entitiesToSave = entities.splice(0, 500);
+
+                        // when saving an entity with a partial key
+                        // the datastore auto-generates the id to make
+                        // a whole key
+                        transaction.save(entities);
+                    }
+                    return transaction.commit();
+                });
         });
 
-        it('should get multiple entities', function() {
+        after(function () {
             this.timeout(10000);
-            let entities: Datastore.ObjectEntity<MockData>[] = [];
-            for (var entry of testData.slice(0, 250)) {
-                entities.push({
-                    key: key,
-                    data: entry
+            ds.transaction().run().then(data => {
+                let transaction = data[0];
+                let keys = [];
+                transaction.createQuery('types/test')
+                    .select('__key__')
+                    .run<[any]>().then(data => data[0].forEach(d => keys.push(d[Datastore.KEY])));
+                while (keys.length > 0) {
+                    // can only delete a max of 500 entities at a time
+                    let keysToDelete = keys.splice(0, 500);
+                    transaction.delete(keysToDelete);
+                }
+                return transaction.commit();
+            });
+        })
+
+        it('should get multiple entities', function () {
+            this.timeout(10000);
+            let keysToGet = [];
+            for (let i = 1; i <= 25; i++)
+                keysToGet.push(ds.key({
+                    path: ['types/test', i]
+                }));
+            return ds.get<MockData>(keysToGet)
+                .then(data => expect(data[0].length).to.equal(25));
+        });
+
+        it('it should get last 25 entities', function () {
+            this.timeout(5000);
+            return ds.createQuery('types/test')
+                .order('id', { descending: true })
+                .limit(25)
+                .run<MockData[]>().then(data => {
+                    expect(data[0].length).to.equal(25);
+                    expect(data[0][0].id).to.equal(1000);
                 });
-            }
-            return ds.save(entities)
-                .then(_ => {
-                    ds.get<MockData[]>(key)
-                        .then(data => expect(data).to.deep.equal(testData.slice(0,250)));
-                })
         });
     });
 });
