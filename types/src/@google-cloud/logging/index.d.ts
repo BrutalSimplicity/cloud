@@ -6,26 +6,26 @@ declare class Logging {
     constructor(config: GCloud.Configuration);
 
     log(name: string, options?: Logging.LogCreationOptions): Logging.Log;
-    entry(resource: MonitoredResource, data: object | string): Entry;
-    entry(data: object | string): Entry;
-    getEntries(options?: Logging.GetEntriesOptions): Promise<[Logging.Entry, any]>;
+    entry(resource: Logging.MonitoredResource, data: any): Logging.Entry;
+    entry(data: any): Logging.Entry;
+    getEntries(options?: Logging.GetEntriesOptions): Promise<[Logging.Entry[], any]>;
 
 }
 
-export namespace Logging {
+declare namespace Logging {
     export interface Log {
-        alert(entry: Entry): Promise<any>;
-        critical(entry: Entry): Promise<any>;
-        debug(entry: Entry): Promise<any>;
-        delete(entry: Entry): Promise<any>;
-        emergency(entry: Entry): Promise<any>;
-        entry(resource: MonitoredResource, data: object | string): Entry;
-        entry(data: object | string): Entry;
-        error(entry: Entry): Promise<any>;
-        getEntries(options?: GetEntriesOptions): Promise<[Entry, any]>;
-        info(entry: Entry);
-        notice(entry: Entry);
-        warning(entry: Entry);
+        alert(entry: Entry, options?: LogOptions): Promise<any>;
+        critical(entry: Entry, options?: LogOptions): Promise<any>;
+        debug(entry: Entry, options?: LogOptions): Promise<any>;
+        delete(entry: Entry, options?: LogOptions): Promise<any>;
+        emergency(entry: Entry, options?: LogOptions): Promise<any>;
+        entry(resource: MonitoredResource, data: any | string): Entry;
+        entry(data: any | string): Entry;
+        error(entry: Entry, options?: LogOptions): Promise<any>;
+        getEntries(options?: GetEntriesOptions): Promise<[Entry[], any]>;
+        info(entry: Entry, options?: LogOptions);
+        notice(entry: Entry, options?: LogOptions);
+        warning(entry: Entry, options?: LogOptions);
         write(entry: Entry|Entry[], options?: LogOptions): Promise<any>;
     }
 
@@ -44,8 +44,8 @@ export namespace Logging {
     }
 
     export interface LogOptions {
-        labels?: object | object[];
-        resource?: object;
+        labels?: any | any[];
+        resource?: any;
     }
 
     export interface GetEntriesOptions {
