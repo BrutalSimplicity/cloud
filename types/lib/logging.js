@@ -16,7 +16,7 @@ before(function () {
     });
 });
 describe('Logging', function () {
-    it('should write log', function () {
+    it('should write string log', function () {
         var log = logService.log('types-test');
         var entry = log.entry('Abracadabra');
         log.write(entry, {
@@ -25,7 +25,34 @@ describe('Logging', function () {
         return log.getEntries()
             .then(function (data) {
             var entries = data[0];
-            chai_1.expect(entries).to.have.Arguments.length.above(0);
+            chai_1.expect(entries).to.have.length.above(0);
+            chai_1.expect(entries[0].data).to.equal('Abracadabra');
+        });
+    });
+    it('should write object log', function () {
+        var log = logService.log('types-test-object');
+        var obj = { module: 'test', message: 'this is only a test', error: 'Test' };
+        var entry = log.entry(obj);
+        log.write(entry, {
+            labels: { name: 'test-log' }
+        });
+        return log.getEntries()
+            .then(function (data) {
+            var entries = data[0];
+            chai_1.expect(entries).to.have.length.above(0);
+            chai_1.expect(entries[0].data).to.deep.equal(obj);
+        });
+    });
+    it('should write debug log', function () {
+        var log = logService.log('types-test-debug');
+        var entry = log.entry('Abracadabra');
+        log.debug(entry, {
+            labels: { name: 'test-log' }
+        });
+        return log.getEntries()
+            .then(function (data) {
+            var entries = data[0];
+            chai_1.expect(entries).to.have.length.above(0);
             chai_1.expect(entries[0].data).to.equal('Abracadabra');
         });
     });

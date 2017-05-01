@@ -107,7 +107,7 @@ declare namespace Datastore {
         offset(n: number): Query;
         order(property: string, options: OrderOptions): Query;
         select(fields: string | string[]): Query;
-        run<T>(options?: QueryOptions): Promise<[T, any]>
+        run<T>(options?: QueryOptions): Promise<[T[], any]>
     }
 
     export interface QueryOptions {

@@ -24,7 +24,7 @@
 			"type": "node",
             "request": "launch",
 			"program": "${workspaceRoot}\\node_modules\\mocha\\bin\\_mocha",
-			"args": ["${workspaceRoot}\\lib\\tests\\tests.js"],
+			"args": ["${workspaceRoot}\\lib\\datastore.js"],
             "cwd": "${workspaceRoot}",
             "preLaunchTask": "tsc",
             "sourceMaps": true

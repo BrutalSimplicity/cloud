@@ -7,7 +7,6 @@ var chai_1 = require("chai");
 var config = null;
 var ds = null;
 before(function () {
-    this.timeout(10000);
     var configPath = '.config/config.json';
     // get config
     console.log(chalk.green('reading configuration...'));
@@ -105,7 +104,6 @@ describe('Datastore', function () {
         });
         it('should save successfully', function () {
             // increase the max 2-second wait period of mocha
-            this.timeout(5000);
             var entity = {
                 data: mockData,
                 key: key
@@ -115,7 +113,6 @@ describe('Datastore', function () {
             return ds.save(entity);
         });
         it('should save successfully with field definitions', function () {
-            this.timeout(5000);
             var entity = {
                 key: key,
                 data: [
@@ -181,7 +178,6 @@ describe('Datastore', function () {
         var testData = null;
         before(function () {
             // increase the max 2-second wait period of mocha
-            this.timeout(10000);
             var entities = [];
             testData = JSON.parse(fs_1.readFileSync('test_data/mock-data.json', 'utf8'));
             var opts = {
@@ -195,40 +191,31 @@ describe('Datastore', function () {
                     data: entry
                 });
             }
-            return ds.transaction().run()
-                .then(function (data) {
-                var transaction = data[0];
-                while (entities.length > 0) {
-                    // can only save a max of 500 entities at a time
-                    var entitiesToSave = entities.splice(0, 500);
-                    // when saving an entity with a partial key
-                    // the datastore auto-generates the id to make
-                    // a whole key
-                    transaction.save(entities);
-                }
-                return transaction.commit();
-            });
+            while (entities.length > 0) {
+                // can only save a max of 500 entities at a time
+                var entitiesToSave = entities.splice(0, 500);
+                // when saving an entity with a partial key
+                // the datastore auto-generates the id to make
+                // a whole key
+                ds.save(entitiesToSave);
+            }
         });
         after(function () {
-            this.timeout(10000);
-            ds.transaction().run().then(function (data) {
-                var transaction = data[0];
-                var keys = [];
-                transaction.createQuery('types/test')
-                    .select('__key__')
-                    .run().then(function (data) { return data[0].forEach(function (d) { return keys.push(d[Datastore.KEY]); }); });
+            var keys = [];
+            return ds.createQuery('types/test')
+                .select('__key__')
+                .run()
+                .then(function (data) {
+                keys = data[0].map(function (d) { return d[Datastore.KEY]; });
                 while (keys.length > 0) {
-                    // can only delete a max of 500 entities at a time
-                    var keysToDelete = keys.splice(0, 500);
-                    transaction.delete(keysToDelete);
+                    var deleteKeys = keys.splice(0, 500);
+                    ds.delete(deleteKeys);
                 }
-                return transaction.commit();
             });
         });
         it('should get multiple entities', function () {
-            this.timeout(10000);
             var keysToGet = [];
-            for (var i = 1; i <= 25; i++)
+            for (var i = 1; i <= 26; i++)
                 keysToGet.push(ds.key({
                     path: ['types/test', i]
                 }));
@@ -236,7 +223,6 @@ describe('Datastore', function () {
                 .then(function (data) { return chai_1.expect(data[0].length).to.equal(25); });
         });
         it('it should get last 25 entities', function () {
-            this.timeout(5000);
             return ds.createQuery('types/test')
                 .order('id', { descending: true })
                 .limit(25)

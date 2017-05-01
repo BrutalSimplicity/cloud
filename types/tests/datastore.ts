@@ -17,7 +17,6 @@ interface MockData {
 let config = null;
 let ds: Datastore = null;
 before(function () {
-    this.timeout(10000);
     let configPath = '.config/config.json';
     // get config
     console.log(chalk.green('reading configuration...'));
@@ -128,7 +127,6 @@ describe('Datastore', function () {
 
         it('should save successfully', function () {
             // increase the max 2-second wait period of mocha
-            this.timeout(5000);
             let entity: Datastore.ObjectEntity<MockData> = {
                 data: mockData,
                 key: key
@@ -140,7 +138,6 @@ describe('Datastore', function () {
         });
 
         it('should save successfully with field definitions', function () {
-            this.timeout(5000);
             let entity: Datastore.FieldDefinitionEntity = {
                 key: key,
                 data: [
@@ -211,7 +208,6 @@ describe('Datastore', function () {
         let testData: MockData[] = null;
         before(function () {
             // increase the max 2-second wait period of mocha
-            this.timeout(10000);
             let entities: Datastore.ObjectEntity<MockData>[] = [];
             testData = JSON.parse(readFileSync('test_data/mock-data.json', 'utf8'));
             let opts: Datastore.KeyOptions = {
@@ -224,45 +220,35 @@ describe('Datastore', function () {
                     data: entry
                 });
             }
+            while (entities.length > 0) {
 
-            return ds.transaction().run()
-                .then(data => {
-                    let transaction = data[0];
-                    while (entities.length > 0) {
+                // can only save a max of 500 entities at a time
+                let entitiesToSave = entities.splice(0, 500);
 
-                        // can only save a max of 500 entities at a time
-                        let entitiesToSave = entities.splice(0, 500);
-
-                        // when saving an entity with a partial key
-                        // the datastore auto-generates the id to make
-                        // a whole key
-                        transaction.save(entities);
-                    }
-                    return transaction.commit();
-                });
+                // when saving an entity with a partial key
+                // the datastore auto-generates the id to make
+                // a whole key
+                ds.save(entitiesToSave);
+            }
         });
 
         after(function () {
-            this.timeout(10000);
-            ds.transaction().run().then(data => {
-                let transaction = data[0];
-                let keys = [];
-                transaction.createQuery('types/test')
-                    .select('__key__')
-                    .run<[any]>().then(data => data[0].forEach(d => keys.push(d[Datastore.KEY])));
-                while (keys.length > 0) {
-                    // can only delete a max of 500 entities at a time
-                    let keysToDelete = keys.splice(0, 500);
-                    transaction.delete(keysToDelete);
-                }
-                return transaction.commit();
-            });
-        })
+            let keys = [];
+            return ds.createQuery('types/test')
+                .select('__key__')
+                .run<any>()
+                .then(data => {
+                    keys = data[0].map(d => d[Datastore.KEY]);
+                    while (keys.length > 0) {
+                        let deleteKeys = keys.splice(0, 500);
+                        ds.delete(deleteKeys);
+                    }
+                });
+        });
 
         it('should get multiple entities', function () {
-            this.timeout(10000);
             let keysToGet = [];
-            for (let i = 1; i <= 25; i++)
+            for (let i = 1; i <= 26; i++)
                 keysToGet.push(ds.key({
                     path: ['types/test', i]
                 }));
@@ -271,11 +257,10 @@ describe('Datastore', function () {
         });
 
         it('it should get last 25 entities', function () {
-            this.timeout(5000);
             return ds.createQuery('types/test')
                 .order('id', { descending: true })
                 .limit(25)
-                .run<MockData[]>().then(data => {
+                .run<MockData>().then(data => {
                     expect(data[0].length).to.equal(25);
                     expect(data[0][0].id).to.equal(1000);
                 });

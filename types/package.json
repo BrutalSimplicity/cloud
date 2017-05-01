@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "npm-run-all --sequential ts:build gcloud:datastore-start",
     "test": "npm-run-all --continue-on-error --sequential mocha:test gcloud:datastore-shutdown",
-    "mocha:test": "mocha --require ts-node/register tests/*",
+    "mocha:test": "mocha --timeout 20000 --require ts-node/register tests/*",
     "mocha:datastore": "mocha --require ts-node/register tests/datastore.ts",
     "mocha:logging": "mocha --require ts-node/register tests/logging.ts",
     "gcloud:datastore-start": "pm2 --silent start scripts/startDatastoreServer.js --name local-datastore",

@@ -3,7 +3,7 @@ import { GCloud } from '../';
 export = Logging;
 
 declare class Logging {
-    constructor(config: GCloud.Configuration);
+    constructor(options: GCloud.Configuration);
 
     log(name: string, options?: Logging.LogCreationOptions): Logging.Log;
     entry(resource: Logging.MonitoredResource, data: any): Logging.Entry;
