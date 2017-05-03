@@ -1,0 +1,7 @@
+.*
+node_modules
+lib
+scripts
+test_data
+tests
+tsconfig.json

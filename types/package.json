@@ -1,8 +1,12 @@
 {
-  "name": "koreo-gcloud-types",
-  "version": "1.0.0",
-  "description": "Some TypeScript definitions for Google Cloud services",
+  "name": "brutalsimplicity-gcloud-types",
+  "version": "1.0.1",
+  "description": "Some TypeScript definitions for Google Cloud services (PubSub, Datastore, Logging).",
   "main": "tests.ts",
+  "keywords": [
+    "google", "cloud", "typescript", "tsd", "definitions", "datastore",
+    "pubsub", "logging"
+  ],
   "scripts": {
     "pretest": "npm-run-all --sequential ts:build gcloud:datastore-start gcloud:pubsub-start",
     "test": "npm-run-all --continue-on-error --sequential mocha:test gcloud:datastore-shutdown gcloud:pubsub-shutdown",
