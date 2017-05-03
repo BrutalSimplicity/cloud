@@ -180,14 +180,15 @@ describe('Datastore', function () {
             // increase the max 2-second wait period of mocha
             var entities = [];
             testData = JSON.parse(fs_1.readFileSync('test_data/mock-data.json', 'utf8'));
-            var opts = {
-                path: ['types/test']
-            };
-            partialKey = ds.key(opts);
+            var i = 1;
             for (var _i = 0, testData_1 = testData; _i < testData_1.length; _i++) {
                 var entry = testData_1[_i];
+                var opts = {
+                    path: ['types/test', i++]
+                };
+                var key = ds.key(opts);
                 entities.push({
-                    key: partialKey,
+                    key: key,
                     data: entry
                 });
             }
@@ -215,7 +216,7 @@ describe('Datastore', function () {
         });
         it('should get multiple entities', function () {
             var keysToGet = [];
-            for (var i = 1; i <= 26; i++)
+            for (var i = 1; i <= 25; i++)
                 keysToGet.push(ds.key({
                     path: ['types/test', i]
                 }));
